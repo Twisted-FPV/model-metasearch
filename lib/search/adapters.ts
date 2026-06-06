@@ -55,11 +55,11 @@ export const adapters: SourceAdapter[] = [
       });
     }
   },
-  {
+{
   id: "stlfinder",
   label: "STLFinder",
   async search(query) {
-    const url = `https://www.stlfinder.com/search/${encodeURIComponent(query)}`;
+    const url = `https://www.stlfinder.com/?search=${encodeURIComponent(query)}`;
 
     return [
       {
@@ -67,6 +67,7 @@ export const adapters: SourceAdapter[] = [
         source: "stlfinder",
         title: `Search STLFinder for "${query}"`,
         url,
+        thumbnailUrl: "https://www.stlfinder.com/favicon.ico",
         isFree: undefined
       }
     ];
