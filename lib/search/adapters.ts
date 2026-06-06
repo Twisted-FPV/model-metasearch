@@ -1,6 +1,7 @@
 import type { SourceAdapter } from "../types";
 import { fetchHtml } from "./http";
 import { extractGenericCards } from "./extract";
+import * as cheerio from "cheerio";
 
 export const adapters: SourceAdapter[] = [
   {
@@ -59,37 +60,41 @@ export const adapters: SourceAdapter[] = [
   id: "stlfinder",
   label: "STLFinder",
   async search(query, _filters, signal) {
-    const ddgUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(
+    const searchUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(
       `site:stlfinder.com/3dmodels ${query}`
     )}`;
 
-    try {
-      const html = await fetchHtml(ddgUrl, signal);
+    const html = await fetchHtml(searchUrl, signal);
+    const $ = cheerio.load(html);
+    const $ = cheerio.load(html);
 
-      const results = extractGenericCards(html, {
+    const results: any[] = [];
+
+    $(".result__a").each((index, el) => {
+      const title = $(el).text().trim();
+      let href = $(el).attr("href");
+
+      if (!title || !href) return;
+
+      try {
+        const parsed = new URL(href, "https://duckduckgo.com");
+        const uddg = parsed.searchParams.get("uddg");
+        if (uddg) href = decodeURIComponent(uddg);
+      } catch {}
+
+      if (!href.includes("stlfinder.com/3dmodels")) return;
+
+      results.push({
+        id: `stlfinder-${index}-${Buffer.from(href).toString("base64url")}`,
         source: "stlfinder",
-        baseUrl: "https://duckduckgo.com",
-        itemUrlIncludes: ["stlfinder.com/3dmodels"]
-      }).map((result) => ({
-        ...result,
-        source: "stlfinder" as const,
-        thumbnailUrl: result.thumbnailUrl ?? "https://www.stlfinder.com/favicon.ico"
-      }));
+        title,
+        url: href,
+        thumbnailUrl: "https://www.stlfinder.com/favicon.ico",
+        isFree: undefined
+      });
+    });
 
-      if (results.length) return results.slice(0, 12);
-    } catch {
-      // Search fallback failed.
-    }
-
-    return [
-      {
-        id: `stlfinder-${Buffer.from(query).toString("base64url")}`,
-        source: "stlfinder",
-        title: `Open STLFinder search for "${query}"`,
-        url: `https://www.stlfinder.com/3dmodels?search=${encodeURIComponent(query)}`,
-        thumbnailUrl: "https://www.stlfinder.com/favicon.ico"
-      }
-    ];
+    return results.slice(0, 12);
   }
 },
   {
