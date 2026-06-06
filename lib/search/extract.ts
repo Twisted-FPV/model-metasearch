@@ -65,7 +65,7 @@ function normalizeUrl(url: string): string {
   return parsed.toString();
 }
 
-function inferFree($: cheerio.CheerioAPI, el: cheerio.Element): boolean | undefined {
+function inferFree($: cheerio.CheerioAPI, el: any): boolean | undefined {
   const text = $(el).closest("article, div, li").text().toLowerCase();
   if (/\bfree\b/.test(text)) return true;
   if (/\$\s?\d|€\s?\d|£\s?\d/.test(text)) return false;
