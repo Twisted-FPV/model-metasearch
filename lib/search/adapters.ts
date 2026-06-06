@@ -61,25 +61,30 @@ export const adapters: SourceAdapter[] = [
   async search(query, _filters, signal) {
     const url = `https://www.stlfinder.com/3dmodels?search=${encodeURIComponent(query)}`;
 
-    const html = await fetchHtml(url, signal);
+    try {
+      const html = await fetchHtml(url, signal);
 
-    const results = extractGenericCards(html, {
-      source: "stlfinder",
-      baseUrl: "https://www.stlfinder.com",
-      itemUrlIncludes: ["/3dmodels/"]
-    });
+      const results = extractGenericCards(html, {
+        source: "stlfinder",
+        baseUrl: "https://www.stlfinder.com",
+        itemUrlIncludes: ["/3dmodels/"]
+      });
 
-    return results.length
-      ? results
-      : [
-          {
-            id: `stlfinder-${Buffer.from(query).toString("base64url")}`,
-            source: "stlfinder",
-            title: `Search STLFinder for "${query}"`,
-            url,
-            thumbnailUrl: "https://www.stlfinder.com/favicon.ico"
-          }
-        ];
+      if (results.length) return results;
+    } catch {
+      // STLFinder often blocks server-side requests.
+    }
+
+    return [
+      {
+        id: `stlfinder-${Buffer.from(query).toString("base64url")}`,
+        source: "stlfinder",
+        title: `Open STLFinder search for "${query}"`,
+        url,
+        thumbnailUrl: "https://www.stlfinder.com/favicon.ico",
+        isFree: undefined
+      }
+    ];
   }
 },
   {
