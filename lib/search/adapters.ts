@@ -5,19 +5,64 @@ import { extractGenericCards } from "./extract";
 
 export const adapters: SourceAdapter[] = [
   {
-    id: "makerworld",
-    label: "MakerWorld",
-    async search(query, _filters, signal) {
-      const url = `https://makerworld.com/en/search/models?keyword=${encodeURIComponent(query)}`;
-      const html = await fetchHtml(url, signal);
+  id: "makerworld",
+  label: "MakerWorld",
+  async search(query, _filters, signal) {
+    const makerWorldUrl = `https://makerworld.com/en/search/models?isFromSearchList=true&keyword=${encodeURIComponent(query)}`;
 
-      return extractGenericCards(html, {
-        source: "makerworld",
-        baseUrl: "https://makerworld.com",
-        itemUrlIncludes: ["/en/models/"]
+    try {
+      const ddgUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(
+        `site:makerworld.com/en/models ${query}`
+      )}`;
+
+      const html = await fetchHtml(ddgUrl, signal);
+      const $ = cheerio.load(html);
+
+      const results: ModelSearchResult[] = [];
+
+      $(".result__a").each((index, el) => {
+        const title = $(el).text().replace(/\s+/g, " ").trim();
+        let href = $(el).attr("href");
+
+        if (!title || !href) return;
+
+        try {
+          const parsed = new URL(href, "https://duckduckgo.com");
+          const uddg = parsed.searchParams.get("uddg");
+          if (uddg) href = decodeURIComponent(uddg);
+        } catch {
+          return;
+        }
+
+        if (!href.includes("makerworld.com/en/models")) return;
+
+        results.push({
+          id: stableId("makerworld", href),
+          source: "makerworld",
+          title,
+          url: href,
+          thumbnailUrl: "https://makerworld.com/favicon.ico",
+          isFree: undefined
+        });
       });
+
+      if (results.length > 0) return results.slice(0, 12);
+    } catch {
+      // MakerWorld blocks or renders results client-side.
     }
-  },
+
+    return [
+      {
+        id: `makerworld-${Buffer.from(query).toString("base64url")}`,
+        source: "makerworld",
+        title: `Open MakerWorld search for "${query}"`,
+        url: makerWorldUrl,
+        thumbnailUrl: "https://makerworld.com/favicon.ico",
+        isFree: undefined
+      }
+    ];
+  }
+},
   {
     id: "thangs",
     label: "Thangs",
