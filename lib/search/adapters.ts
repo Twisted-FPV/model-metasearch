@@ -59,7 +59,13 @@ export const adapters: SourceAdapter[] = [
   id: "stlfinder",
   label: "STLFinder",
   async search(query) {
-    const url = `https://www.stlfinder.com/?search=${encodeURIComponent(query)}`;
+    const slug = query
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    const url = `https://www.stlfinder.com/3dmodels/${slug}/`;
 
     return [
       {
