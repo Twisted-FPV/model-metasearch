@@ -59,20 +59,26 @@ export const adapters: SourceAdapter[] = [
   id: "stlfinder",
   label: "STLFinder",
   async search(query, _filters, signal) {
-    const url = `https://www.stlfinder.com/3dmodels?search=${encodeURIComponent(query)}`;
+    const ddgUrl = `https://duckduckgo.com/html/?q=${encodeURIComponent(
+      `site:stlfinder.com/3dmodels ${query}`
+    )}`;
 
     try {
-      const html = await fetchHtml(url, signal);
+      const html = await fetchHtml(ddgUrl, signal);
 
       const results = extractGenericCards(html, {
         source: "stlfinder",
-        baseUrl: "https://www.stlfinder.com",
-        itemUrlIncludes: ["/3dmodels/"]
-      });
+        baseUrl: "https://duckduckgo.com",
+        itemUrlIncludes: ["stlfinder.com/3dmodels"]
+      }).map((result) => ({
+        ...result,
+        source: "stlfinder" as const,
+        thumbnailUrl: result.thumbnailUrl ?? "https://www.stlfinder.com/favicon.ico"
+      }));
 
-      if (results.length) return results;
+      if (results.length) return results.slice(0, 12);
     } catch {
-      // STLFinder often blocks server-side requests.
+      // Search fallback failed.
     }
 
     return [
@@ -80,9 +86,8 @@ export const adapters: SourceAdapter[] = [
         id: `stlfinder-${Buffer.from(query).toString("base64url")}`,
         source: "stlfinder",
         title: `Open STLFinder search for "${query}"`,
-        url,
-        thumbnailUrl: "https://www.stlfinder.com/favicon.ico",
-        isFree: undefined
+        url: `https://www.stlfinder.com/3dmodels?search=${encodeURIComponent(query)}`,
+        thumbnailUrl: "https://www.stlfinder.com/favicon.ico"
       }
     ];
   }
