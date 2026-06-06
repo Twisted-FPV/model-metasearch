@@ -56,18 +56,22 @@ export const adapters: SourceAdapter[] = [
     }
   },
   {
-    id: "stlfinder",
-    label: "STLFinder",
-    async search(query, _filters, signal) {
-      const url = `https://www.stlfinder.com/3dmodels/${encodeURIComponent(query)}/`;
-      const html = await fetchHtml(url, signal);
-      return extractGenericCards(html, {
+  id: "stlfinder",
+  label: "STLFinder",
+  async search(query) {
+    const url = `https://www.stlfinder.com/search/${encodeURIComponent(query)}`;
+
+    return [
+      {
+        id: `stlfinder-${Buffer.from(query).toString("base64url")}`,
         source: "stlfinder",
-        baseUrl: "https://www.stlfinder.com",
-        itemUrlIncludes: ["/model/"]
-      });
-    }
-  },
+        title: `Search STLFinder for "${query}"`,
+        url,
+        isFree: undefined
+      }
+    ];
+  }
+},
   {
     id: "cults3d",
     label: "Cults3D",
